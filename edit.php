@@ -1,16 +1,73 @@
 <?php
 // Initialize the session
 session_start();
- 
+
 // Check if the user is logged in, if not then redirect him to login page
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
+if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
     header("location: auth/login.php");
     exit;
 }
 
+// Generate CSRF token if not set
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
+// Security headers (must be before any output)
+header("X-Frame-Options: DENY");
+header("X-Content-Type-Options: nosniff");
+header("Strict-Transport-Security: max-age=31536000; includeSubDomains");
+header("Referrer-Policy: same-origin");
+
+include 'functions.php';
+
+parse_str($_SERVER['QUERY_STRING'], $qs_arr);
+
+if (isset($qs_arr['a_id']) && (int)$qs_arr['a_id'] > 0) {
+    // initial entry via GET
+    $a_id = (int)$qs_arr['a_id'];
+} else {
+    // edit update entry via POST
+    $a_id = isset($_POST['a_id']) ? (int)$_POST['a_id'] : 0;
+}
+
+$search_keyword = null;
+if (array_key_exists('search_keyword', $_POST)) {
+    $search_keyword = $_POST['search_keyword'];
+}
+$search_title = null;
+if (array_key_exists('search_title', $_POST)) {
+    $search_title = $_POST['search_title'];
+}
+$update_title = null;
+if (array_key_exists('update_title', $_POST)) {
+    $update_title = $_POST['update_title'];
+}
+$update_status = null;
+if (array_key_exists('update_status', $_POST)) {
+    $update_status = (int)$_POST['update_status'];
+}
+$update_body = null;
+if (array_key_exists('update_body', $_POST)) {
+    $update_body = $_POST['update_body'];
+}
+$add_link = null;
+if (array_key_exists('add_link', $_POST)) {
+    $add_link = (int)$_POST['add_link'];
+}
+$delete_link = null;
+if (array_key_exists('delete_link', $_POST)) {
+    $delete_link = (int)$_POST['delete_link'];
+}
+
+// Validate CSRF for all state-mutating POST actions
+$mutating = $update_title || !is_null($update_status) || $update_body || $add_link || $delete_link;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mutating) {
+    if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die("Invalid request.");
+    }
+}
 ?>
-
 
 <!doctype html>
 <html lang="en">
@@ -23,78 +80,27 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
   <script src="js/jquery-3.6.0.min.js"></script>
   <link href="css/bootstrap.css" rel="stylesheet">
   <script src="js/bootstrap.min.js"></script>
-      <!-- script src="js/nicEdit.js" type="text/javascript"></script-->
   <link href="css/summernote.css" rel="stylesheet">
      <script src="js/html_edit.js" type="text/javascript"></script>
   <link rel="stylesheet" href="css/styles.css">
   <script src="js/summernote.js"></script>
-     <script type="text/javascript">
-//        bkLib.onDomLoaded(function() {
-//               nic_editor = new nicEditor({fullPanel : true}).panelInstance('id_textarea_body');
-//              document.getElementById('id_html_switch').checked = true;
-//        });     
-     </script>                                                     
 
 <?php
-include 'functions.php';
-
-parse_str( $_SERVER['QUERY_STRING'], $qs_arr);
-
-if ($qs_arr['a_id'] > 0) {
-    #initial entry
-    $a_id = $qs_arr['a_id'];
-} else {
-    # edit update entry
-    $a_id = $_POST['a_id'];
-}
-$search_keyword = null;
-if (array_key_exists('search_keyword', $_POST)) {
-    $search_keyword = $_POST['search_keyword'];
-}
-$search_title = null;
-if (array_key_exists('search_title', $_POST)) {
-    $search_title = $_POST['search_title'];
-}
-$search_text = null;
-if (array_key_exists('search_text', $_POST)) {
-    $search_text = $_POST['search_text'];
-}
-$update_title = null;
-if (array_key_exists('update_title', $_POST)) {
-    $update_title = $_POST['update_title'];
-}
-$update_status = null;
-if (array_key_exists('update_status', $_POST)) {
-    $update_status = $_POST['update_status'];
-}
-$update_body = null;
-if (array_key_exists('update_body', $_POST)) {
-    $update_body = $_POST['update_body'];
-}
-$add_link = null;
-if (array_key_exists('add_link', $_POST)) {
-    $add_link = $_POST['add_link'];
-}
-$delete_link = null;
-if (array_key_exists('delete_link', $_POST)) {
-    $delete_link = $_POST['delete_link'];
-}
-
-
 include_jump_nav();
-     echo "</head>";
+echo "</head>";
 
-     if( $a_id ) {
-         # scroll jump to a_id index
-         echo "<body onload='jump_nav($a_id);'>";
-     } else if($search_keyword) {
-         echo "<body onload='jump_nav(null, \"$search_keyword\");'>";
-     } else if($search_title) {
-         $st2 = preg_replace("/'/", "&apos;", $search_title);
-         echo "<body onload='jump_nav(null, null, \"$st2\");'>";
-     } else {
-         echo "<body>";
-     }
+if ($a_id) {
+    // $a_id is already cast to int — safe to embed directly in JS
+    echo "<body onload='jump_nav($a_id);'>";
+} elseif ($search_keyword) {
+    $sk_js = json_encode($search_keyword, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+    echo "<body onload='jump_nav(null, $sk_js);'>";
+} elseif ($search_title) {
+    $st_js = json_encode($search_title, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+    echo "<body onload='jump_nav(null, null, $st_js);'>";
+} else {
+    echo "<body>";
+}
 ?>
 
     <header>
@@ -105,24 +111,21 @@ include_jump_nav();
       <a href="./add.php" class="menu_button" ><button> Add </button></a>
       <form action="index.php" method="GET" class="search_box" >
          <input type="text" name="search_text" class="search" id="search_text" placeholder="Search here!">
-        <!--    <input type="submit" name="submit" class="submit" id="search_button" value="Search"> -->
       </form>
-
     </menu_bar>
-
 
      <div id="popup_enc">
      <div>Enter Passphrase to encrypt:</div>
      <input id="pass" type="password"/>
-     <button onclick="popup_enc_post('id_form_body','id_textarea_body')">Encrypt</button>    
-     <button onclick="popup_enc_cancel()">Cancel</button>    
+     <button onclick="popup_enc_post('id_form_body','id_textarea_body')">Encrypt</button>
+     <button onclick="popup_enc_cancel()">Cancel</button>
      </div>
 
      <div id="popup_dec">
      <div>Enter Passphrase to decrypt:</div>
      <input id="pass" type="password"/>
-     <button onclick="popup_dec_text()">Decrypt</button>    
-     <button onclick="popup_dec_cancel()">Cancel</button>    
+     <button onclick="popup_dec_text()">Decrypt</button>
+     <button onclick="popup_dec_cancel()">Cancel</button>
      </div>
 
      <div id="popup_file">
@@ -137,174 +140,165 @@ $db = db_open();
 
 date_default_timezone_set("America/Denver");
 
-$method = "post";
-#$method = "get"; # debug to show URL, no execution
-
-
-# URI may have search index
-
-if ( $a_id < 1 ) {
+if ($a_id < 1) {
     echo "?!";
     exit;
 }
 
-# update title 
-if($update_title) {
+// Helper: hidden CSRF field
+$csrf_field = "<input type='hidden' name='csrf_token' value='" . htmlspecialchars($_SESSION['csrf_token']) . "'>";
+
+// update title
+if ($update_title) {
     $title = htmlspecialchars($update_title);
     $datestr = date("Y-m-d H:i");
     $title = trim($title);
-    $title = preg_replace("/'/", "&apos;", $title);
-    $sql = "update articles set a_title='$title', a_mod_date='$datestr' where a_id=$a_id;";
-    $ret = $db->exec($sql);
-    if(!$ret) {
+    $stmt = $db->prepare("UPDATE articles SET a_title = :title, a_mod_date = :datestr WHERE a_id = :a_id");
+    $stmt->bindValue(':title', $title, SQLITE3_TEXT);
+    $stmt->bindValue(':datestr', $datestr, SQLITE3_TEXT);
+    $stmt->bindValue(':a_id', $a_id, SQLITE3_INTEGER);
+    if (!$stmt->execute()) {
         echo $db->lastErrorMsg();
     }
 }
 
-# update status
-# a_status bit 0 is pinned, bit 1 is deleted when 1
-if(! is_null($update_status) ) {
-    $sql = "update articles set a_status='$update_status' where a_id=$a_id;";
-    $ret = $db->exec($sql);
-    if(!$ret) {
+// update status — a_status bit 0 is pinned, bit 1 is deleted
+if (!is_null($update_status)) {
+    $stmt = $db->prepare("UPDATE articles SET a_status = :status WHERE a_id = :a_id");
+    $stmt->bindValue(':status', $update_status, SQLITE3_INTEGER);
+    $stmt->bindValue(':a_id', $a_id, SQLITE3_INTEGER);
+    if (!$stmt->execute()) {
         echo $db->lastErrorMsg();
     }
 }
 
-# update body  
-if($update_body) {
-    $body =  htmlspecialchars($update_body);
+// update body
+if ($update_body) {
+    $body    = htmlspecialchars($update_body);
     $datestr = date("Y-m-d H:i");
-    $body = preg_replace("/'/", "&apos;", $body);
-    $sql = "update articles set a_body='$body', a_mod_date='$datestr' where a_id=$a_id;";
-    $ret = $db->exec($sql);
-    if(!$ret) {
+    $stmt = $db->prepare("UPDATE articles SET a_body = :body, a_mod_date = :datestr WHERE a_id = :a_id");
+    $stmt->bindValue(':body', $body, SQLITE3_TEXT);
+    $stmt->bindValue(':datestr', $datestr, SQLITE3_TEXT);
+    $stmt->bindValue(':a_id', $a_id, SQLITE3_INTEGER);
+    if (!$stmt->execute()) {
         echo $db->lastErrorMsg();
     }
-    # process keywords
     db_delete_keywords($a_id);
     db_add_keywords($a_id, $body);
-    #echo "<script> console.log('added keywords in $a_id');</script>\n";
 
-        # jump back on success
-        $url = "index.php?a_id=$a_id"; // this can be set based on whatever
-        echo "<script>window.location = '$url';</script>";
+    // jump back on success
+    echo "<script>window.location = 'index.php?a_id=$a_id';</script>";
 }
 
-# add new link
-if($add_link) {
-    if($add_link!=0) {
-        db_add_link($a_id, $add_link);
-    }
+// add new link
+if ($add_link && $add_link != 0) {
+    db_add_link($a_id, $add_link);
 }
 
-# delete a link
-if($delete_link) {
-    if($delete_link!=0) {
-        db_delete_link($delete_link);
-    }
+// delete a link
+if ($delete_link && $delete_link != 0) {
+    db_delete_link($delete_link);
 }
 
+db_navigator($a_id);
 
-    db_navigator($a_id);
-
-
-# show article 
+// show article
 echo "  <article>\n";
 
-$sql ="SELECT * from articles where a_id=$a_id;";
-$ret = $db->query($sql);
-$row = $ret->fetchArray(SQLITE3_ASSOC);
+$stmt = $db->prepare("SELECT * FROM articles WHERE a_id = :a_id");
+$stmt->bindValue(':a_id', $a_id, SQLITE3_INTEGER);
+$ret  = $stmt->execute();
+$row  = $ret->fetchArray(SQLITE3_ASSOC);
 
-# date
+// date
 echo "<p><b> Date : </b> ";
-printf("<a href='index.php?a_id=%d'>%04d %s </a>\n" , $a_id , $a_id, $row['a_datetime'] );
+printf("<a href='index.php?a_id=%d'>%04d %s </a>\n", $a_id, $a_id, htmlspecialchars($row['a_datetime']));
 
-
-# title
-echo "<form method=\"" .$method ."\" >" .
-    "<lable ><b> Title </b></label>" .
+// title
+echo "<form method=\"post\" >" .
+    $csrf_field .
+    "<input type='hidden' name='a_id' value='$a_id' />" .
+    "<label><b> Title </b></label>" .
     "<textarea name=\"update_title\" rows=\"1\"  >";
-echo $row['a_title'];
+echo htmlspecialchars($row['a_title']);
 echo "</textarea> ";
-echo "<input type='hidden' name='a_id' value='$a_id' />";
 echo "<input type=\"submit\" name=\"t_button\" class=\"button\" value=\"Update Title\" /> ";
 echo "</form>\n";
 
-
-# pin - stationary article
-$status = $row['a_status'];
-if(($status % 2) == 1) {
+// pin — stationary article
+$status = (int)$row['a_status'];
+if (($status % 2) == 1) {
     $state = "Pinned";
     $value = $status - 1;
     $label = "Unpin";
-}else{
+} else {
     $state = "Not pinned";
     $value = $status + 1;
     $label = "Pin";
 }
-echo "<form method='$method'  >" ;
+echo "<form method='post'>";
+echo $csrf_field;
 echo "<label>$state</label> <nbsp>";
 echo "<input type='hidden' name='update_status' value='$value' />";
 echo "<input type='hidden' name='a_id' value='$a_id' />";
-echo "<input type='submit' value='$label' />" ;
+echo "<input type='submit' value='" . htmlspecialchars($label) . "' />";
 echo "</form>\n";
 
-# delete article
-$status = $row['a_status'];
-if(($status % 4) >= 2) {
+// delete article
+if (($status % 4) >= 2) {
     $state = "Deleted";
     $value = $status - 2;
     $label = "Undelete";
-}else{
+} else {
     $state = "Active";
     $value = $status + 2;
     $label = "Delete";
 }
-echo "<form method='$method'  >" ;
+echo "<form method='post'>";
+echo $csrf_field;
 echo "<label>$state</label> <nbsp>";
 echo "<input type='hidden' name='a_id'  value='$a_id' />";
 echo "<input type='hidden' name='update_status' value='$value' />";
-echo "<input type='submit' value='$label' />" ;
+echo "<input type='submit' value='" . htmlspecialchars($label) . "' />";
 echo "</form>\n";
 
-
-
-
-
-# list links 
+// list links
 echo "<br><b> Links : </b>";
 echo "<ul> ";
-$sql ="SELECT a_id_2 as 'a_id', al_id from article_links where a_id_1='$a_id' union select a_id_1 as 'a_id', al_id from article_links where a_id_2='$a_id';";
-$ret = $db->query($sql);
-while($l_row = $ret->fetchArray(SQLITE3_ASSOC) ) {
-    
-    $l_a_id = $l_row['a_id'];
-    $al_id = $l_row['al_id'];
-    echo "<form method=\"" .$method ."\" >";
-    echo "<input type=\"hidden\" name=\"al_id\" value=\"$al_id\" />" ;
-    printf( "<li><a href='index.php?a_id=%d'>%04d </a>\n" , $l_a_id , $l_a_id );
-
-echo     "<input type='hidden' name='delete_link' value='$al_id' />" ;
+$stmt = $db->prepare(
+    "SELECT a_id_2 AS 'a_id', al_id FROM article_links WHERE a_id_1 = :id " .
+    "UNION SELECT a_id_1 AS 'a_id', al_id FROM article_links WHERE a_id_2 = :id"
+);
+$stmt->bindValue(':id', $a_id, SQLITE3_INTEGER);
+$ret = $stmt->execute();
+while ($l_row = $ret->fetchArray(SQLITE3_ASSOC)) {
+    $l_a_id = (int)$l_row['a_id'];
+    $al_id  = (int)$l_row['al_id'];
+    echo "<form method=\"post\">";
+    echo $csrf_field;
+    printf("<li><a href='index.php?a_id=%d'>%04d </a>\n", $l_a_id, $l_a_id);
+    echo "<input type='hidden' name='delete_link' value='$al_id' />";
+    echo "<input type='hidden' name='a_id' value='$a_id' />";
     echo "<input type='submit' value='Delete' />";
-#    echo "<input type='submit' name='delete_link' class='button_delete' value='$al_id'>Delete </input> ";
     echo "</li></form>\n";
 }
 echo "</ul> ";
 
-# add selector
-echo "<form method=\"" .$method ."\" >" .
+// add link selector
+echo "<form method=\"post\">" .
+     $csrf_field .
      "<input type=\"hidden\" name=\"a_id\" value=\"$a_id\" />" .
     "  <label >Add link:</label> " .
     "  <select name=\"add_link\" id=\"add_link\"> ";
 echo "<option value=''> </option>";
 
-$sql ="SELECT * from articles where a_id!=" . $a_id ." order by a_id desc;" ;
-
-$ret = $db->query($sql);
-while($l_row = $ret->fetchArray(SQLITE3_ASSOC) ) {
-    echo $l_row['a_id'];
-    echo "<option value=\"" . $l_row['a_id'] . "\">" . $l_row['a_id'] . " " . substr($l_row['a_title'],0,20) . "</option>";
+$stmt = $db->prepare("SELECT * FROM articles WHERE a_id != :a_id ORDER BY a_id DESC");
+$stmt->bindValue(':a_id', $a_id, SQLITE3_INTEGER);
+$ret = $stmt->execute();
+while ($l_row = $ret->fetchArray(SQLITE3_ASSOC)) {
+    $opt_id    = (int)$l_row['a_id'];
+    $opt_title = htmlspecialchars(substr($l_row['a_title'], 0, 20));
+    echo "<option value=\"$opt_id\">$opt_id $opt_title</option>";
 }
 
 echo " </select> ";
@@ -313,31 +307,22 @@ echo "</form>\n";
 
 echo "</p>";
 
-# article body
+// article body
 $body = htmlspecialchars_decode($row['a_body']);
-echo "<form id='id_form_body' method=\"" .$method ."\" >";
-echo " <lable ><b> Article Text</b></label> " ;
-
-
-## echo ' <div class="sliderdiv"> <label class="switch"> ';
-## echo   "<input id='id_html_switch' type='checkbox' onchange='toggle_html(\"id_html_switch\", \"id_textarea_body\");'> ";
-## echo   '<span class="slider"></span>';
-## echo '</label> &nbsp; HTML Editor </div>' ;
-
- echo  " <textarea id='id_textarea_body' name=\"update_body\" style=\"height:500px;\" >";
- echo  $body;
- echo "</textarea> ";
+echo "<form id='id_form_body' method=\"post\">";
+echo $csrf_field;
+echo "<input type='hidden' name='a_id' value='$a_id' />";
+echo " <label><b> Article Text</b></label> ";
+echo " <textarea id='id_textarea_body' name=\"update_body\" style=\"height:500px;\" >";
+echo $body;
+echo "</textarea> ";
 
 echo "<input type=\"button\" name=\"button_b\" class=\"button\" value=\"Update Article Text\" ";
-
 echo " onclick='search_encrypt_tag()' /> ";
 
-## echo "<input type='submit' value='submit' class='button' />";
 echo "</form> ";
 
-
 $db->close();
-
 
 ?>
 
@@ -347,7 +332,6 @@ $db->close();
     <footer>
 
     </footer>
-
 
 
   </body>

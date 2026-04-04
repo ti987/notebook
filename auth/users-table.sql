@@ -3,6 +3,7 @@ CREATE TABLE users (
     username text NOT NULL UNIQUE,
     password text NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY("id" AUTOINCREMENT)               
-  
+    failed_attempts INTEGER NOT NULL DEFAULT 0,
+    lockout_until DATETIME DEFAULT NULL,
+  PRIMARY KEY("id" AUTOINCREMENT)
 );

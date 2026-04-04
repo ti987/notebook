@@ -1,92 +1,84 @@
 <?php
 
-
 // exit;   // not accepting users
-
 
 // Include config file
 include "config.php";
 
-$debug = 0;  // set it to 1 to see what's sent
+// Initialize the session
+session_start();
 
-if($debug == 1) {
-    $method = "GET";
-    $args = $_GET;
-} else {
-    $method = "POST";
-    $args = $_POST;
-}    
+// Generate CSRF token if not set
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 // Define variables and initialize with empty values
 $username = $password = $confirm_password = "";
 $username_err = $password_err = $confirm_password_err = "";
 
-
 // Processing form data when form is submitted
-if($_SERVER["REQUEST_METHOD"] == $method && sizeof($args)>0 ) {
- 
+if ($_SERVER["REQUEST_METHOD"] == "POST" && sizeof($_POST) > 0) {
+
+    // Validate CSRF token
+    if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die("Invalid request.");
+    }
+
     // Validate username
-    if(empty(trim($args["username"]))){
+    if (empty(trim($_POST["username"]))) {
         $username_err = "Please enter a username.";
-    } elseif(!preg_match('/^[a-zA-Z0-9_]+$/', trim($args["username"]))){
+    } elseif (!preg_match('/^[a-zA-Z0-9_]+$/', trim($_POST["username"]))) {
         $username_err = "Username can only contain letters, numbers, and underscores.";
-    } else{
-        // Prepare a select statement
-        $param_username = trim($args["username"]);
-        $sql = "SELECT id FROM users WHERE username = \"$param_username\";";
-        echo $sql;
-        $ret = $db->query($sql);
+    } else {
+        $param_username = trim($_POST["username"]);
+        $stmt = $db->prepare("SELECT id FROM users WHERE username = :username");
+        $stmt->bindValue(':username', $param_username, SQLITE3_TEXT);
+        $ret = $stmt->execute();
         $row = $ret->fetchArray(SQLITE3_ASSOC);
-        
-        // Attempt to execute the prepared statement
-        if($row != false){
+
+        if ($row != false) {
             $username_err = "This username is already taken.";
-        } else{
+        } else {
             $username = $param_username;
         }
-        
     }
-    
+
     // Validate password
-    if(empty(trim($args["password"]))){
-        $password_err = "Please enter a password.";     
-    } elseif(strlen(trim($args["password"])) < 5){
-        $password_err = "Password must have atleast 5 characters.";
-    } else{
-        $password = trim($args["password"]);
+    if (empty(trim($_POST["password"]))) {
+        $password_err = "Please enter a password.";
+    } elseif (strlen(trim($_POST["password"])) < 8) {
+        $password_err = "Password must have at least 8 characters.";
+    } else {
+        $password = trim($_POST["password"]);
     }
-    
+
     // Validate confirm password
-    if(empty(trim($args["confirm_password"]))){
-        $confirm_password_err = "Please confirm password.";     
-    } else{
-        $confirm_password = trim($args["confirm_password"]);
-        if(empty($password_err) && ($password != $confirm_password)){
+    if (empty(trim($_POST["confirm_password"]))) {
+        $confirm_password_err = "Please confirm password.";
+    } else {
+        $confirm_password = trim($_POST["confirm_password"]);
+        if (empty($password_err) && ($password != $confirm_password)) {
             $confirm_password_err = "Password did not match.";
         }
     }
-    
+
     // Check input errors before inserting in database
-    if(empty($username_err) && empty($password_err) && empty($confirm_password_err)){
-        
-        // Prepare an insert statement
-         
-        // Set parameters
-        $param_username = $username;
-        $param_password = password_hash($password, PASSWORD_DEFAULT); // Creates a password hash
-        $sql = "INSERT INTO users (username, password) VALUES (\"$param_username\", \"$param_password\");";
-        echo "<br>";
-        echo $sql;
-
-        $db->exec($sql) or die("Unable to add user $user");
+    if (empty($username_err) && empty($password_err) && empty($confirm_password_err)) {
+        $param_password = password_hash($password, PASSWORD_DEFAULT);
+        $stmt = $db->prepare("INSERT INTO users (username, password) VALUES (:username, :password)");
+        $stmt->bindValue(':username', $username, SQLITE3_TEXT);
+        $stmt->bindValue(':password', $param_password, SQLITE3_TEXT);
+        $stmt->execute() or die("Unable to add user");
         header("location: login.php");
-
+        exit;
     }
-    
-    // Close connection 
+
+    // Close connection
     $db->close();
 }
 ?>
- 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -102,21 +94,22 @@ if($_SERVER["REQUEST_METHOD"] == $method && sizeof($args)>0 ) {
     <div class="wrapper">
         <h2>Sign Up</h2>
         <p>Please fill this form to create an account.</p>
-        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="<?php echo $method; ?>">
+        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
             <div class="form-group">
                 <label>Username</label>
-                <input type="text" name="username" class="form-control <?php echo (!empty($username_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $username; ?>">
-                <span class="invalid-feedback"><?php echo $username_err; ?></span>
-            </div>    
+                <input type="text" name="username" class="form-control <?php echo (!empty($username_err)) ? 'is-invalid' : ''; ?>" value="<?php echo htmlspecialchars($username); ?>">
+                <span class="invalid-feedback"><?php echo htmlspecialchars($username_err); ?></span>
+            </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" name="password" class="form-control <?php echo (!empty($password_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $password; ?>">
-                <span class="invalid-feedback"><?php echo $password_err; ?></span>
+                <input type="password" name="password" class="form-control <?php echo (!empty($password_err)) ? 'is-invalid' : ''; ?>">
+                <span class="invalid-feedback"><?php echo htmlspecialchars($password_err); ?></span>
             </div>
             <div class="form-group">
                 <label>Confirm Password</label>
-                <input type="password" name="confirm_password" class="form-control <?php echo (!empty($confirm_password_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $confirm_password; ?>">
-                <span class="invalid-feedback"><?php echo $confirm_password_err; ?></span>
+                <input type="password" name="confirm_password" class="form-control <?php echo (!empty($confirm_password_err)) ? 'is-invalid' : ''; ?>">
+                <span class="invalid-feedback"><?php echo htmlspecialchars($confirm_password_err); ?></span>
             </div>
             <div class="form-group">
                 <input type="submit" class="btn btn-primary" value="Submit">
@@ -124,6 +117,6 @@ if($_SERVER["REQUEST_METHOD"] == $method && sizeof($args)>0 ) {
             </div>
             <p>Already have an account? <a href="login.php">Login here</a>.</p>
         </form>
-    </div>    
+    </div>
 </body>
 </html>
