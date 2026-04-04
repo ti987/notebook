@@ -1,0 +1,4 @@
+require 'webrick'
+
+root = File.expand_path '~/public_html'
+server = WEBrick::HTTPServer.new :Port => 58001, :DocumentRoot => root

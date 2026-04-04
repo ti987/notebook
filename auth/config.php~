@@ -1,0 +1,16 @@
+<?php
+/* Database credentials. Assuming you are running Sqlite3
+$link = new SQLite3('mysqlitedb.db');
+
+class MyDB extends SQLite3 {
+    function __construct() {
+        $this->open('db/blog1.db');
+    }
+}
+$link = new MyDB();
+if(!$link) {
+    echo $link->lastErrorMsg();
+    exit;
+}
+$link->loadExtension('pcre.so');
+?>

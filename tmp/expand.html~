@@ -1,0 +1,8 @@
+<details>
+  <summary>See More</summary>
+  This text will be hidden if your browser supports it.
+  <details>
+    <summary>See More Details</summary>
+    This text will be hidden if your browser supports it.
+  </details>
+</details>

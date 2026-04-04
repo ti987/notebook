@@ -1,0 +1,8 @@
+<?php
+$array = array("foo", "bar", "hello", "world");
+var_dump($array);
+echo "<br>";
+echo "<br>";
+echo "!!!$array===";
+?>
+    

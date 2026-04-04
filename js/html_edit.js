@@ -1,0 +1,168 @@
+var summernote;
+// --var nic_editor;
+// --
+// --
+// --function set_html_editor( id, html ) {
+// --    var ta = document.getElementById(id);
+// --    if (html == 1) {
+// --        nic_editor = new nicEditor({fullPanel : true}).panelInstance(id);
+// --        var nic_inst = nicEditors.findEditor(id);
+// --        nic_inst.setContent(ta.innerHTML);
+// --        nic_editor.addInstance(id);
+// --    } else {
+// --        var nic_inst = nicEditors.findEditor(id);
+// --        ta.innerHTML = nic_inst.getContent();
+// --        nic_editor.removeInstance(id);
+// --
+// --    }
+// --}
+// --
+// --
+// --function toggle_html(id_switch, id_textarea) {
+// --    var checked = document.getElementById(id_switch).checked;
+// --    var ta = document.getElementById(id_textarea);
+// --    if(checked){
+// --        nic_editor = new nicEditor({fullPanel : true}).panelInstance(id_textarea);
+// --        var nic_inst = nicEditors.findEditor(id_textarea);
+// --        nic_inst.setContent(ta.value);
+// --        
+// --    }else{
+// --        var nic_inst = nicEditors.findEditor(id_textarea);
+// --        var cont = nic_inst.getContent();
+// --        cont = cont.replace(/&lt;([a-zA-Z\/])/gi,"<$1");
+// --        cont = cont.replace(/&gt;/gi,">");
+// --
+// --        nic_editor.removeInstance(id_textarea);
+// --        ta.innerHTML = cont;
+// --        ta.value = cont;
+// --    }
+// --}
+
+
+function add_encrypt () {
+    var node = document.createElement('encrypt');
+    // @param {Node} node
+    var str = "<encrypt>&nbsp;</encrypt>";
+    summernote.summernote('pasteHTML', str);
+
+    //summernote.summernote('insertNode', node);
+}
+
+var encrypt_button = function (context) {
+  var ui = $.summernote.ui;
+
+  // create button
+  var button = ui.button({
+    contents: '<i class="fa fa-child"/> Enc',
+    tooltip: 'add encrypt tag',
+    click: function () {
+      // invoke insertText method with 'hello' on editor module.
+        add_encrypt();
+    }
+  });
+
+  return button.render();   // return button as jquery object
+}
+
+function add_img_link () {
+    var str = "<img src='images/";
+    var str2 = "' alt='image link' >";
+    // @param {Node} node
+    var popup = document.getElementById('popup_file');
+    popup.style.display = 'block';
+    popup.onchange = e => { 
+        var file = e.target.files[0]; 
+//        summernote.summernote('pasteHTML', str + file.name + str2);
+        var node = document.createElement('img');
+        node.setAttribute('src', 'images/'+file.name);
+        summernote.summernote('insertNode', node);
+        popup.style.display = 'none';
+        
+    }
+    
+    popup.click();
+}
+
+var img_link_button = function (context) {
+  var ui = $.summernote.ui;
+
+  // create button
+  var button = ui.button({
+    contents: '<i class="fa fa-child"/> Img',
+    tooltip: 'add img src tag',
+    click: function () {
+      // invoke insertText method with 'hello' on editor module.
+        add_img_link();
+    }
+  });
+
+  return button.render();   // return button as jquery object
+}
+
+function add_panel () {
+
+   // @param {Node} node
+    var popup = document.getElementById('popup_file');
+    popup.style.display = 'block';
+    popup.onchange = e => { 
+        var file = e.target.files[0]; 
+//        summernote.summernote('pasteHTML', str + file.name + str2);
+        var node = document.createElement('img');
+        node.setAttribute('src', 'images/'+file.name);
+        summernote.summernote('insertNode', node);
+        popup.style.display = 'none';
+        
+    }
+    
+    popup.click();
+}
+
+var panel_button = function (context) {
+  var ui = $.summernote.ui;
+
+  // create button
+  var button = ui.button({
+    contents: '<i class="fa fa-child"/> Panel',
+    tooltip: 'add blocked text',
+    click: function () {
+        var str = "<table class='table table-bordered w3-pale-green'><tbody><td>  </td></tbody></table>\n";
+        summernote.summernote('pasteHTML', str);
+    }
+  });
+
+  return button.render();   // return button as jquery object
+}
+
+
+
+
+$(document).ready(function() {
+    summernote = $('#id_textarea_body');
+    summernote.summernote( {
+        height: 500, 
+        width:'100%',
+        toolbar: [
+            ['style', ['style']],
+            ['font', ['bold', 'italic', 'underline', 'clear']],
+            ['fontname', ['fontname']],
+            ['color', ['color']],
+            ['para', ['ul', 'ol', 'paragraph','panel']],
+            ['table', ['table']],
+            ['insert', ['link', 'picture', 'video', 'img_link']],
+            ['mybutton', ['encrypt']],
+            ['view', ['fullscreen', 'codeview', 'help']],
+        ],
+        air: [
+            ['color', ['color']],
+            ['font', ['bold', 'underline', 'clear']],
+            ['para', ['ul', 'paragraph']],
+            ['table', ['table']],
+            ['insert', ['link', 'picture']]
+        ],
+        buttons: {
+            encrypt: encrypt_button,
+            img_link : img_link_button,
+            panel : panel_button
+        }
+    });
+});

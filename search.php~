@@ -1,0 +1,26 @@
+#php search script
+
+<?php
+
+   $queries = array();
+   parse_str($_SERVER['QUERY_STRING'], $queries);
+
+   $db = new MyDB();
+   if(!$db) {
+      echo $db->lastErrorMsg();
+   }
+
+   $sql ="SELECT * from articles where $queries limit 1";
+   $ret = $db->query($sql);
+   $row = $ret->fetchArray(SQLITE3_ASSOC);
+
+   echo "<p>";
+      echo $row['a_date'] ."\n";
+   echo "</p>";
+   echo "<p>";
+      echo $row['a_body'] ."\n";
+   echo "</p>";
+      
+   $db->close();
+
+?>
