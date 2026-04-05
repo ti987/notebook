@@ -124,7 +124,7 @@ if ($a_id) {
      <a href="./upload.php" class="menu_button_right" ><button>file upload </button></a>
 
 <form action="index.php" method="GET" class="search_box" >
-    <input type="text" name="search_text" class="search" id="search_text" placeholder="Search here!"/>
+    <input type="text" name="search_text" class="search" id="search_text" placeholder="Regular expression search…" value="<?= htmlspecialchars($search_text ?? '') ?>"/>
     </form>
 
 

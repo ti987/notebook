@@ -77,7 +77,7 @@ $follow = null;
     <menu_bar>
       <a href="./index.php" class="menu_button" ><button> Home </button></a>
       <form action="index.php" method="GET" class="search_box" >
-         <input type="text" name="search_text" class="search" id="search_text" placeholder="Search here!">
+         <input type="text" name="search_text" class="search" id="search_text" placeholder="Regular expression search…">
       </form>
     </menu_bar>
 
