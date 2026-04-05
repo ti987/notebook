@@ -1,7 +1,7 @@
 <?php
 // development notebook webpage
 // database functions
-// toshi isogai 2022-2023
+// toshi isogai 2022-2026
 
 // Initialize the session
 session_start();
@@ -102,7 +102,7 @@ include 'functions.php';
 
      <header>
      Notebook
-          <version>ver. 1.7.1</version>
+          <version>ver. 1.9.0</version>
           <version_note> Fixed QUERY_STRING parsing </version_note>
      </header>
      <menu_bar>

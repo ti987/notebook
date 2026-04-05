@@ -1,6 +1,6 @@
 <?php
 
-// exit;   // not accepting users
+ exit;   // not accepting users
 
 // Include config file
 include "config.php";
