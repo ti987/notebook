@@ -195,7 +195,7 @@ while ($row) {
 
     $title = htmlspecialchars($row['a_title']);
     if ($search_text) {
-        $title = preg_replace("/" . preg_quote($search_text, '/') . "/i", '<search_text>$0</search_text>', $title);
+        $title = @preg_replace('~' . $search_text . '~i', '<search_text>$0</search_text>', $title);
     }
 
     if (($row['a_status'] % 4) >= 2) {
@@ -225,7 +225,7 @@ while ($row) {
     $body = htmlspecialchars_decode($row['a_body']);
     $body = preg_replace("/($TAG)/", '<a href="index.php?search_keyword=\2"> <keyword>\1</keyword> </a> &nbsp;', $body);
     if ($search_text) {
-        $body = preg_replace("/" . preg_quote($search_text, '/') . "/i", '<search_text>$0</search_text>', $body);
+        $body = @preg_replace('~' . $search_text . '~i', '<search_text>$0</search_text>', $body);
     }
     echo $body . "\n";
     echo "<br><br><hr class='end_article'>\n";

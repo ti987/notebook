@@ -32,7 +32,7 @@ function db_open() {
         exit;
     }
     $db->createFunction('REGEXP', function($pattern, $value) {
-        return (bool)preg_match('/' . $pattern . '/', (string)$value);
+        return (bool)@preg_match('~' . $pattern . '~', (string)$value);
     }, 2);
     return $db;
 }
