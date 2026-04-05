@@ -38,7 +38,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && sizeof($_POST) > 0) {
         $row = $ret->fetchArray(SQLITE3_ASSOC);
 
         if ($row != false) {
-            $username_err = "This username is already taken.";
+            $username_err = "This username is not available.";
         } else {
             $username = $param_username;
         }
