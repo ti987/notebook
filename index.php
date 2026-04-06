@@ -147,7 +147,8 @@ if ($search_text) {
         "SELECT * FROM articles WHERE (a_title REGEXP :pat)" .
         " OR (a_body REGEXP :pat)" .
         " OR (a_mod_date REGEXP :pat)" .
-        " OR (a_datetime REGEXP :pat)"
+        " OR (a_datetime REGEXP :pat)" .
+        " ORDER BY a_id DESC"
     );
     $stmt->bindValue(':pat', $pat, SQLITE3_TEXT);
     $ret = $stmt->execute();
