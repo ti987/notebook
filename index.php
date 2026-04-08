@@ -3,6 +3,8 @@
 // database functions
 // toshi isogai 2022-2026
 
+include 'functions.php';
+
 // Initialize the session
 session_start();
 
@@ -74,7 +76,6 @@ if (array_key_exists('delete_link', $qs_arr)) {
      <script src="js/encryption.js"></script>
 
 <?php
-include 'functions.php';
      include_jump_nav();
      echo "</head>";
 
