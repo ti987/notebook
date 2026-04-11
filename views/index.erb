@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/css/w3.css">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/aes.js"></script>
+  <script src="/js/encryption.js"></script>
+  <%= jump_nav_js %>
+</head>
+<% if @a_id %>
+  <body onload="jump_nav(<%= @a_id %>);">
+<% elsif @search_keyword %>
+  <body onload="jump_nav(null, <%= @search_keyword.to_json %>);">
+<% elsif @search_title %>
+  <body onload="jump_nav(null, null, <%= @search_title.to_json %>);">
+<% else %>
+  <body>
+<% end %>
+
+<div id="popup_dec">
+  <div>Enter Passphrase to decrypt:</div>
+  <input id="pass" type="password"/>
+  <button onclick="popup_dec_text()">Decrypt</button>
+  <button onclick="popup_dec_cancel()">Cancel</button>
+</div>
+
+<header>
+  Notebook
+  <version>ver. 1.9.0</version>
+  <version_note>Ruby/Sinatra port</version_note>
+</header>
+
+<menu_bar>
+  <a href="/" class="menu_button"><button>Home</button></a>
+  <a href="/add" class="menu_button"><button>Add</button></a>
+  <% if @a_id %>
+    <a href="/edit?a_id=<%= @a_id %>" class="menu_button"><button>Edit</button></a>
+    <a href="/add?follow_up=<%= @a_id %>" class="menu_button"><button>Follow Up</button></a>
+  <% end %>
+  <a href="/auth/logout" class="menu_button_right"><button>Logout</button></a>
+  <a href="/upload" class="menu_button_right"><button>file upload</button></a>
+  <form action="/" method="GET" class="search_box">
+    <input type="text" name="search_text" class="search" id="search_text"
+           placeholder="Search here!" value="<%= h(@search_text.to_s) %>"/>
+  </form>
+</menu_bar>
+
+<section>
+  <%= @navigator %>
+
+  <article>
+  <% if @articles.empty? %>
+    <p>text not found</p>
+  <% else %>
+    <% @articles.each do |row| %>
+      <%
+        cur_id   = row['a_id'].to_i
+        status   = row['a_status'].to_i
+        title    = h(row['a_title'].to_s)
+        if @search_text && !@search_text.empty?
+          title = title.gsub(Regexp.new(Regexp.escape(@search_text), Regexp::IGNORECASE)) { |m| "<search_text>#{m}</search_text>" }
+        end
+        title = "<del>#{title}</del>" if (status % 4) >= 2
+      %>
+      <b>Date</b> <%= h(row['a_datetime'].to_s) %>
+      <b>Article</b> <a href="/?a_id=<%= cur_id %>"><%= format('%04d', cur_id) %></a>
+      <% if row['a_mod_date'] && !row['a_mod_date'].empty? %>
+        &nbsp;<b>Last Mod Date</b> <%= h(row['a_mod_date']) %>
+      <% end %>
+      <br><b>Title</b> <%= title %>
+
+      <br><b>Links</b>
+      <ul>
+        <% (@article_links[cur_id] || []).each do |lrow| %>
+          <li><a href="/?a_id=<%= lrow['a_id'].to_i %>"><%= format('%04d', lrow['a_id'].to_i) %></a></li>
+        <% end %>
+      </ul>
+
+      <b>Article Text</b><br>
+      <%
+        body = CGI.unescapeHTML(row['a_body'].to_s)
+        # Linkify #:keyword tags
+        body = body.gsub(/(#:([0-9_a-zA-Z-]+))/) do
+          full = $1; word = $2
+          %(<a href="/?search_keyword=#{CGI.escape(word)}"> <keyword>#{CGI.escapeHTML(full)}</keyword> </a>&nbsp;)
+        end
+        # Highlight search text
+        if @search_text && !@search_text.empty?
+          body = body.gsub(Regexp.new(Regexp.escape(@search_text), Regexp::IGNORECASE)) { |m| "<search_text>#{m}</search_text>" }
+        end
+      %>
+      <%= body %>
+      <br><br><hr class="end_article">
+    <% end %>
+  <% end %>
+  </article>
+</section>
+
+<footer></footer>
+</body>
+</html>
