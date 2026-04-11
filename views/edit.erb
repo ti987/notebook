@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/css/w3.css">
+  <script src="/js/aes.js"></script>
+  <script src="/js/encryption.js"></script>
+  <script src="/js/jquery-3.6.0.min.js"></script>
+  <link href="/css/bootstrap.css" rel="stylesheet">
+  <script src="/js/bootstrap.min.js"></script>
+  <link href="/css/summernote.css" rel="stylesheet">
+  <script src="/js/html_edit.js" type="text/javascript"></script>
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/summernote.js"></script>
+  <%= jump_nav_js %>
+</head>
+<body onload="jump_nav(<%= @a_id %>);">
+
+<div id="popup_enc">
+  <div>Enter Passphrase to encrypt:</div>
+  <input id="pass" type="password"/>
+  <button onclick="popup_enc_post('id_form_body','id_textarea_body')">Encrypt</button>
+  <button onclick="popup_enc_cancel()">Cancel</button>
+</div>
+<div id="popup_dec">
+  <div>Enter Passphrase to decrypt:</div>
+  <input id="pass" type="password"/>
+  <button onclick="popup_dec_text()">Decrypt</button>
+  <button onclick="popup_dec_cancel()">Cancel</button>
+</div>
+<div id="popup_file">
+  <input type="file"/>
+</div>
+
+<header>Edit articles</header>
+<menu_bar>
+  <a href="/" class="menu_button"><button>Home</button></a>
+  <a href="/add" class="menu_button"><button>Add</button></a>
+  <form action="/" method="GET" class="search_box">
+    <input type="text" name="search_text" class="search" id="search_text" placeholder="Search here!">
+  </form>
+</menu_bar>
+
+<section>
+  <%= @navigator %>
+
+  <article>
+    <p>
+      <b>Date:</b>
+      <a href="/?a_id=<%= @a_id %>"><%= format('%04d', @a_id) %> <%= h(@row['a_datetime'].to_s) %></a>
+
+      <%# ── Update title ────────────────────────────────────────────────── %>
+      <form method="post" action="/edit">
+        <input type="hidden" name="csrf_token" value="<%= h(@csrf_token) %>">
+        <input type="hidden" name="a_id" value="<%= @a_id %>">
+        <label><b>Title</b></label>
+        <textarea name="update_title" rows="1"><%= h(@row['a_title'].to_s) %></textarea>
+        <input type="submit" class="button" value="Update Title">
+      </form>
+
+      <%# ── Pin / Unpin ─────────────────────────────────────────────────── %>
+      <%
+        status = @row['a_status'].to_i
+        if (status % 2) == 1
+          pin_state = 'Pinned';   pin_value = status - 1; pin_label = 'Unpin'
+        else
+          pin_state = 'Not pinned'; pin_value = status + 1; pin_label = 'Pin'
+        end
+      %>
+      <form method="post" action="/edit">
+        <input type="hidden" name="csrf_token" value="<%= h(@csrf_token) %>">
+        <input type="hidden" name="a_id" value="<%= @a_id %>">
+        <input type="hidden" name="update_status" value="<%= pin_value %>">
+        <label><%= h(pin_state) %></label> &nbsp;
+        <input type="submit" value="<%= h(pin_label) %>">
+      </form>
+
+      <%# ── Delete / Undelete ───────────────────────────────────────────── %>
+      <%
+        if (status % 4) >= 2
+          del_state = 'Deleted'; del_value = status - 2; del_label = 'Undelete'
+        else
+          del_state = 'Active';  del_value = status + 2; del_label = 'Delete'
+        end
+      %>
+      <form method="post" action="/edit">
+        <input type="hidden" name="csrf_token" value="<%= h(@csrf_token) %>">
+        <input type="hidden" name="a_id" value="<%= @a_id %>">
+        <input type="hidden" name="update_status" value="<%= del_value %>">
+        <label><%= h(del_state) %></label> &nbsp;
+        <input type="submit" value="<%= h(del_label) %>">
+      </form>
+
+      <%# ── Links ───────────────────────────────────────────────────────── %>
+      <br><b>Links:</b>
+      <ul>
+        <% @links.each do |lrow| %>
+          <% l_a_id = lrow['a_id'].to_i; al_id = lrow['al_id'].to_i %>
+          <form method="post" action="/edit">
+            <input type="hidden" name="csrf_token" value="<%= h(@csrf_token) %>">
+            <input type="hidden" name="a_id" value="<%= @a_id %>">
+            <input type="hidden" name="delete_link" value="<%= al_id %>">
+            <li>
+              <a href="/?a_id=<%= l_a_id %>"><%= format('%04d', l_a_id) %></a>
+              <input type="submit" value="Delete">
+            </li>
+          </form>
+        <% end %>
+      </ul>
+
+      <%# ── Add link ────────────────────────────────────────────────────── %>
+      <form method="post" action="/edit">
+        <input type="hidden" name="csrf_token" value="<%= h(@csrf_token) %>">
+        <input type="hidden" name="a_id" value="<%= @a_id %>">
+        <label>Add link:</label>
+        <select name="add_link" id="add_link">
+          <option value=""> </option>
+          <% @all_articles.each do |arow| %>
+            <option value="<%= arow['a_id'].to_i %>">
+              <%= arow['a_id'].to_i %> <%= h(arow['a_title'].to_s[0, 20]) %>
+            </option>
+          <% end %>
+        </select>
+        <input type="submit" value="Add link">
+      </form>
+    </p>
+
+    <%# ── Article body ─────────────────────────────────────────────────── %>
+    <form id="id_form_body" method="post" action="/edit">
+      <input type="hidden" name="csrf_token" value="<%= h(@csrf_token) %>">
+      <input type="hidden" name="a_id" value="<%= @a_id %>">
+      <label><b>Article Text</b></label>
+      <textarea id="id_textarea_body" name="update_body" style="height:500px;"><%= CGI.unescapeHTML(@row['a_body'].to_s) %></textarea>
+      <input type="button" class="button" value="Update Article Text" onclick="search_encrypt_tag()">
+    </form>
+  </article>
+</section>
+
+<footer></footer>
+</body>
+</html>
