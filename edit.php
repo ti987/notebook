@@ -110,7 +110,7 @@ if ($a_id) {
       <a href="./index.php" class="menu_button" ><button> Home </button></a>
       <a href="./add.php" class="menu_button" ><button> Add </button></a>
       <form action="index.php" method="GET" class="search_box" >
-         <input type="text" name="search_text" class="search" id="search_text" placeholder="Search here!">
+         <input type="text" name="search_text" class="search" id="search_text" placeholder="Regular expression search…">
       </form>
     </menu_bar>
 

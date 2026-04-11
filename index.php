@@ -125,7 +125,7 @@ if ($a_id) {
      <a href="./upload.php" class="menu_button_right" ><button>file upload </button></a>
 
 <form action="index.php" method="GET" class="search_box" >
-    <input type="text" name="search_text" class="search" id="search_text" placeholder="Search here!"/>
+    <input type="text" name="search_text" class="search" id="search_text" placeholder="Regular expression search…" value="<?= htmlspecialchars($search_text ?? '') ?>"/>
     </form>
 
 
@@ -148,7 +148,8 @@ if ($search_text) {
         "SELECT * FROM articles WHERE (a_title REGEXP :pat)" .
         " OR (a_body REGEXP :pat)" .
         " OR (a_mod_date REGEXP :pat)" .
-        " OR (a_datetime REGEXP :pat)"
+        " OR (a_datetime REGEXP :pat)" .
+        " ORDER BY a_id DESC"
     );
     $stmt->bindValue(':pat', $pat, SQLITE3_TEXT);
     $ret = $stmt->execute();
@@ -186,7 +187,29 @@ $row = $ret->fetchArray(SQLITE3_ASSOC);
 if (!$row) {
     echo("text not found");
 }
-while ($row) {
+
+// For regexp searches, collect all rows first so we can show a match-count summary
+if ($search_text && $row) {
+    $rows = [];
+    while ($row) {
+        $rows[] = $row;
+        $row = $ret->fetchArray(SQLITE3_ASSOC);
+    }
+
+    // Print summary: article number + total match count across all fields
+    echo "<div class='search_summary'><b>Results:</b><ul>\n";
+    foreach ($rows as $r) {
+        $count  = (int)@preg_match_all('~' . $search_text . '~i', $r['a_title']);
+        $count += (int)@preg_match_all('~' . $search_text . '~i', htmlspecialchars_decode($r['a_body']));
+        printf(
+            "<li><a href='index.php?a_id=%d'>%04d</a> &mdash; %d match%s</li>\n",
+            (int)$r['a_id'], (int)$r['a_id'], $count, $count === 1 ? '' : 'es'
+        );
+    }
+    echo "</ul></div>\n";
+
+    // Render each article
+    foreach ($rows as $row) {
 
     printf("<b>Date </b> %s ", htmlspecialchars($row['a_datetime']));
     printf("<b>Article </b><a href='index.php?a_id=%d'>%04d</a> \n", (int)$row['a_id'], (int)$row['a_id']);
@@ -196,7 +219,7 @@ while ($row) {
 
     $title = htmlspecialchars($row['a_title']);
     if ($search_text) {
-        $title = preg_replace("/" . preg_quote($search_text, '/') . "/i", '<search_text>$0</search_text>', $title);
+        $title = @preg_replace('~' . $search_text . '~i', '<search_text>$0</search_text>', $title);
     }
 
     if (($row['a_status'] % 4) >= 2) {
@@ -226,11 +249,44 @@ while ($row) {
     $body = htmlspecialchars_decode($row['a_body']);
     $body = preg_replace("/($TAG)/", '<a href="index.php?search_keyword=\2"> <keyword>\1</keyword> </a> &nbsp;', $body);
     if ($search_text) {
-        $body = preg_replace("/" . preg_quote($search_text, '/') . "/i", '<search_text>$0</search_text>', $body);
+        $body = @preg_replace('~' . $search_text . '~i', '<search_text>$0</search_text>', $body);
     }
     echo $body . "\n";
     echo "<br><br><hr class='end_article'>\n";
-    $row = $ret->fetchArray(SQLITE3_ASSOC);
+    }  // end foreach / while
+} else {
+    while ($row) {
+        printf("<b>Date </b> %s ", htmlspecialchars($row['a_datetime']));
+        printf("<b>Article </b><a href='index.php?a_id=%d'>%04d</a> \n", (int)$row['a_id'], (int)$row['a_id']);
+        if ($row['a_mod_date']) {
+            printf("&nbsp;<b>Last Mod Date </b> %s ", htmlspecialchars($row['a_mod_date']));
+        }
+
+        $title = htmlspecialchars($row['a_title']);
+        if (($row['a_status'] % 4) >= 2) {
+            $title = "<del>$title</del>";
+        }
+        printf("<br><b>Title </b>%s\n", $title);
+
+        echo "<br><b> Links  </b><ul> ";
+        $cur_id = (int)$row['a_id'];
+        $stmt2 = $db->prepare(
+            "SELECT a_id_2 AS \"a_id\" FROM article_links WHERE a_id_1 = :id " .
+            "UNION SELECT a_id_1 AS \"a_id\" FROM article_links WHERE a_id_2 = :id"
+        );
+        $stmt2->bindValue(':id', $cur_id, SQLITE3_INTEGER);
+        $ret2 = $stmt2->execute();
+        while ($row2 = $ret2->fetchArray(SQLITE3_ASSOC)) {
+            printf("<li><a href='index.php?a_id=%d'>%04d </a></li>\n", (int)$row2['a_id'], (int)$row2['a_id']);
+        }
+        echo "</ul> ";
+        echo "<b> Article Text </b><br> ";
+        $body = htmlspecialchars_decode($row['a_body']);
+        $body = preg_replace("/($TAG)/", '<a href="index.php?search_keyword=\2"> <keyword>\1</keyword> </a> &nbsp;', $body);
+        echo $body . "\n";
+        echo "<br><br><hr class='end_article'>\n";
+        $row = $ret->fetchArray(SQLITE3_ASSOC);
+    }
 }
 
 $db->close();

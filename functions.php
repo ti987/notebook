@@ -31,11 +31,9 @@ function db_open() {
         echo $db->lastErrorMsg();
         exit;
     }
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-        $db->loadExtension('regexp.dll');
-    } else {
-        $db->loadExtension('pcre.so');
-    }
+    $db->createFunction('REGEXP', function($pattern, $value) {
+        return (bool)@preg_match('~' . $pattern . '~', (string)$value);
+    }, 2);
     return $db;
 }
 
