@@ -203,7 +203,7 @@ get '/' do
     pat  = "(?i:#{@search_text})"
     @articles = db.execute(
       "SELECT * FROM articles WHERE (a_title REGEXP ?) OR (a_body REGEXP ?)" \
-      " OR (a_mod_date REGEXP ?) OR (a_datetime REGEXP ?)",
+      " OR (a_mod_date REGEXP ?) OR (a_datetime REGEXP ?) ORDER BY a_id DESC",
       [pat, pat, pat, pat]
     )
   elsif @search_keyword
@@ -211,10 +211,10 @@ get '/' do
     @articles = db.execute(
       "SELECT * FROM articles a WHERE a.a_id IN " \
       "(SELECT kl.a_id FROM keyword_links kl WHERE kl.k_id IN " \
-      "(SELECT k.k_id FROM keywords k WHERE k.keyword = ?))", keyword
+      "(SELECT k.k_id FROM keywords k WHERE k.keyword = ?)) ORDER BY a.a_id DESC", keyword
     )
   elsif @search_title
-    @articles = db.execute('SELECT * FROM articles WHERE a_title = ?', @search_title)
+    @articles = db.execute('SELECT * FROM articles WHERE a_title = ? ORDER BY a_id DESC', @search_title)
   elsif @a_id
     @articles = db.execute('SELECT * FROM articles WHERE a_id = ?', @a_id)
   else

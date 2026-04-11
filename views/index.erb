@@ -60,7 +60,7 @@
         status   = row['a_status'].to_i
         title    = h(row['a_title'].to_s)
         if @search_text && !@search_text.empty?
-          title = title.gsub(Regexp.new(Regexp.escape(@search_text), 'i')) { "<search_text>#{$~}</search_text>" }
+          title = title.gsub(Regexp.new(Regexp.escape(@search_text), Regexp::IGNORECASE)) { |m| "<search_text>#{m}</search_text>" }
         end
         title = "<del>#{title}</del>" if (status % 4) >= 2
       %>
@@ -88,7 +88,7 @@
         end
         # Highlight search text
         if @search_text && !@search_text.empty?
-          body = body.gsub(Regexp.new(Regexp.escape(@search_text), 'i')) { "<search_text>#{$~}</search_text>" }
+          body = body.gsub(Regexp.new(Regexp.escape(@search_text), Regexp::IGNORECASE)) { |m| "<search_text>#{m}</search_text>" }
         end
       %>
       <%= body %>
