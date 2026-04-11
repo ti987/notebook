@@ -159,10 +159,10 @@ post '/auth/login' do
         if new_attempts >= 5
           lockout = (Time.now + 15 * 60).strftime('%Y-%m-%d %H:%M:%S')
           db.execute('UPDATE users SET failed_attempts = ?, lockout_until = ? WHERE id = ?',
-                     new_attempts, lockout, row['id'])
+                     [new_attempts, lockout, row['id']])
         else
           db.execute('UPDATE users SET failed_attempts = ?, lockout_until = NULL WHERE id = ?',
-                     new_attempts, row['id'])
+                     [new_attempts, row['id']])
         end
         @login_err = 'Invalid username or password.'
       end
@@ -204,7 +204,7 @@ get '/' do
     @articles = db.execute(
       "SELECT * FROM articles WHERE (a_title REGEXP ?) OR (a_body REGEXP ?)" \
       " OR (a_mod_date REGEXP ?) OR (a_datetime REGEXP ?)",
-      pat, pat, pat, pat
+      [pat, pat, pat, pat]
     )
   elsif @search_keyword
     keyword   = "#:#{@search_keyword}"
@@ -228,7 +228,7 @@ get '/' do
     @article_links[cur] = db.execute(
       "SELECT a_id_2 AS 'a_id' FROM article_links WHERE a_id_1 = ? " \
       "UNION SELECT a_id_1 AS 'a_id' FROM article_links WHERE a_id_2 = ?",
-      cur, cur
+      [cur, cur]
     )
   end
 
@@ -304,7 +304,7 @@ post '/add' do
   datestr = Time.now.strftime('%Y-%m-%d %H:%M')
   db.execute(
     "INSERT INTO articles (a_datetime, a_title, a_body, a_mod_date) VALUES (?, ?, ?, '')",
-    datestr, title, body
+    [datestr, title, body]
   )
   a_id = db.last_insert_row_id
 
@@ -337,7 +337,7 @@ get '/edit' do
   @links = db.execute(
     "SELECT a_id_2 AS 'a_id', al_id FROM article_links WHERE a_id_1 = ? " \
     "UNION SELECT a_id_1 AS 'a_id', al_id FROM article_links WHERE a_id_2 = ?",
-    a_id, a_id
+    [a_id, a_id]
   )
   @all_articles = db.execute('SELECT * FROM articles WHERE a_id != ? ORDER BY a_id DESC', a_id)
   @navigator    = db_navigator(db, a_id: a_id)
@@ -366,17 +366,17 @@ post '/edit' do
   if update_title
     title = CGI.escapeHTML(update_title).strip
     db.execute('UPDATE articles SET a_title = ?, a_mod_date = ? WHERE a_id = ?',
-               title, datestr, a_id)
+               [title, datestr, a_id])
   end
 
   unless update_status.nil?
-    db.execute('UPDATE articles SET a_status = ? WHERE a_id = ?', update_status, a_id)
+    db.execute('UPDATE articles SET a_status = ? WHERE a_id = ?', [update_status, a_id])
   end
 
   if update_body
     body = CGI.escapeHTML(update_body)
     db.execute('UPDATE articles SET a_body = ?, a_mod_date = ? WHERE a_id = ?',
-               body, datestr, a_id)
+               [body, datestr, a_id])
     db_delete_keywords(db, a_id)
     db_add_keywords(db, a_id, body)
     db.close
@@ -394,7 +394,7 @@ post '/edit' do
   @links        = db.execute(
     "SELECT a_id_2 AS 'a_id', al_id FROM article_links WHERE a_id_1 = ? " \
     "UNION SELECT a_id_1 AS 'a_id', al_id FROM article_links WHERE a_id_2 = ?",
-    a_id, a_id
+    [a_id, a_id]
   )
   @all_articles = db.execute('SELECT * FROM articles WHERE a_id != ? ORDER BY a_id DESC', a_id)
   @navigator    = db_navigator(db, a_id: a_id)

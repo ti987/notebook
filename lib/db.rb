@@ -53,13 +53,13 @@ def db_add_keywords(db, a_id, body)
     else
       row['k_id']
     end
-    db.execute('INSERT INTO keyword_links (k_id, a_id) VALUES (?, ?)', k_id, a_id.to_i)
+    db.execute('INSERT INTO keyword_links (k_id, a_id) VALUES (?, ?)', [k_id, a_id.to_i])
   end
 end
 
 def db_add_link(db, a_id_1, a_id_2)
   db.execute('INSERT INTO article_links (a_id_1, a_id_2) VALUES (?, ?)',
-             a_id_1.to_i, a_id_2.to_i)
+             [a_id_1.to_i, a_id_2.to_i])
 end
 
 def db_delete_link(db, al_id)
