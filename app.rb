@@ -73,12 +73,15 @@ helpers do
   end
 
   # Wrap every occurrence of term in text with <mark>…</mark>.
-  # Operates on a plain Ruby string — no ERB interpolation issues.
+  # term is treated as a regex (same as the SQLite REGEXP search), so
+  # special characters like '.' work as expected. Invalid patterns are
+  # silently ignored and the original text is returned unhighlighted.
   def highlight(text, term)
     return text if term.nil? || term.empty?
-    text.gsub(Regexp.new(Regexp.escape(term), Regexp::IGNORECASE)) do |m|
-      "<mark>#{m}</mark>"
-    end
+    re = Regexp.new(term, Regexp::IGNORECASE)
+    text.gsub(re) { |m| "<mark>#{m}</mark>" }
+  rescue RegexpError
+    text
   end
 
   # Inline JS for scrolling the nav panels to the current article.
