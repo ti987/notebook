@@ -72,6 +72,15 @@ helpers do
     end
   end
 
+  # Wrap every occurrence of term in text with <mark>…</mark>.
+  # Operates on a plain Ruby string — no ERB interpolation issues.
+  def highlight(text, term)
+    return text if term.nil? || term.empty?
+    text.gsub(Regexp.new(Regexp.escape(term), Regexp::IGNORECASE)) do |m|
+      "<mark>#{m}</mark>"
+    end
+  end
+
   # Inline JS for scrolling the nav panels to the current article.
   def jump_nav_js
     <<~JS

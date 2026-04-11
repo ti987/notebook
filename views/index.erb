@@ -58,10 +58,7 @@
       <%
         cur_id   = row['a_id'].to_i
         status   = row['a_status'].to_i
-        title    = h(row['a_title'].to_s)
-        if @search_text && !@search_text.empty?
-          title = title.gsub(Regexp.new(Regexp.escape(@search_text), Regexp::IGNORECASE)) { |m| "<search_text>#{m}</search_text>" }
-        end
+        title    = highlight(h(row['a_title'].to_s), @search_text)
         title = "<del>#{title}</del>" if (status % 4) >= 2
       %>
       <b>Date</b> <%= h(row['a_datetime'].to_s) %>
@@ -86,10 +83,8 @@
           full = $1; word = $2
           %(<a href="/?search_keyword=#{CGI.escape(word)}"> <keyword>#{CGI.escapeHTML(full)}</keyword> </a>&nbsp;)
         end
-        # Highlight search text
-        if @search_text && !@search_text.empty?
-          body = body.gsub(Regexp.new(Regexp.escape(@search_text), Regexp::IGNORECASE)) { |m| "<search_text>#{m}</search_text>" }
-        end
+        # Highlight search text (uses helper — avoids ERB interpolation issues)
+        body = highlight(body, @search_text)
       %>
       <%= body %>
       <br><br><hr class="end_article">

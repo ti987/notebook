@@ -216,7 +216,10 @@ keyword {
 }
 
 search_text {
+  background-color: #f1f100;
+}
 
+mark {
   background-color: #f1f100;
 }
 
