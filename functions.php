@@ -6,10 +6,13 @@ global $TAG;
 $TAG = "#:([0-9_a-zA-Z-]+)";
 
 
-if ($_SERVER["HTTPS"] != "on") {
+$_host = $_SERVER['HTTP_HOST'] ?? '';
+$_is_local = ($_host === 'localhost' || strpos($_host, 'localhost:') === 0 || $_host === '127.0.0.1' || strpos($_host, '127.0.0.1:') === 0);
+if (!$_is_local && ($_SERVER["HTTPS"] ?? '') !== "on") {
     header("Location: https://" . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"]);
     exit();
 }
+unset($_host, $_is_local);
 
 function send_security_headers() {
     header("X-Frame-Options: DENY");
