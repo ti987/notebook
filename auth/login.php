@@ -14,7 +14,7 @@ if (php_sapi_name() !== 'cli-server'
 
 // Check if the user is already logged in, redirect to welcome page
 if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
-    header("location: ./index.php");
+    header("location: ../index.php");
     exit;
 }
 
