@@ -1,5 +1,6 @@
 <?php
 // Initialize the session
+require_once __DIR__ . '/session_init.php';
 session_start();
 
 // Check if the user is logged in, if not then redirect him to login page

@@ -3,6 +3,7 @@
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_secure', 1);
 ini_set('session.cookie_samesite', 'Strict');
+require_once __DIR__ . '/../session_init.php';
 session_start();
 
 if (php_sapi_name() !== 'cli-server'

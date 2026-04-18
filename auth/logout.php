@@ -1,5 +1,6 @@
 <?php
 // Initialize the session
+require_once __DIR__ . '/../session_init.php';
 session_start();
  
 // Unset all of the session variables

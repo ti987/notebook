@@ -9,6 +9,7 @@ if (php_sapi_name() !== 'cli-server'
     && !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
     ini_set('session.cookie_secure', 1);
 }
+require_once __DIR__ . '/../session_init.php';
 session_start();
 
 // Include config file
