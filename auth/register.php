@@ -2,11 +2,17 @@
 
 // exit;   // not accepting users
 
+// Initialize the session (must precede any output, including warnings from includes)
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_samesite', 'Strict');
+if (php_sapi_name() !== 'cli-server'
+    && !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    ini_set('session.cookie_secure', 1);
+}
+session_start();
+
 // Include config file
 include "config.php";
-
-// Initialize the session
-session_start();
 
 // Generate CSRF token if not set
 if (empty($_SESSION['csrf_token'])) {

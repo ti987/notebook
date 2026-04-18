@@ -10,7 +10,6 @@ if(!$db) {
     echo $db->lastErrorMsg();
     exit;
 }
-$db->loadExtension('pcre.so');
 
 // Migrate: add rate-limiting columns if they don't exist yet
 $cols = [];
