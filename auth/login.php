@@ -5,7 +5,8 @@ ini_set('session.cookie_secure', 1);
 ini_set('session.cookie_samesite', 'Strict');
 session_start();
 
-if ($_SERVER["HTTPS"] != "on") {
+if (php_sapi_name() !== 'cli-server'
+    && (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off')) {
     header("Location: https://" . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"]);
     exit();
 }

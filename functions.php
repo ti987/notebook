@@ -6,7 +6,8 @@ global $TAG;
 $TAG = "#:([0-9_a-zA-Z-]+)";
 
 
-if ($_SERVER["HTTPS"] != "on") {
+if (php_sapi_name() !== 'cli-server'
+    && (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off')) {
     header("Location: https://" . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"]);
     exit();
 }
